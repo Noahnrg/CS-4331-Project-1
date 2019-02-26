@@ -1,0 +1,487 @@
+<html>
+    <head>
+        <title>English Top 4 Leagues since 1949</title>
+        <script src='https://d3js.org/d3.v5.min.js'> //D3 Framework</script> 
+        <script src="data.js"> // Local Data JS File </script> 
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+        <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"  media="screen">
+        <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+
+        <style>
+            /*            
+            This is my style sheet code, for formatting on the page
+            */
+            svg {
+                border: 2px solid black;
+            }
+            .line {
+                fill: none;
+                stroke-width: 3px;
+            }
+
+            .overlay {
+                fill: none;
+                pointer-events: all;
+            }
+
+            .hover-line {
+                stroke: #000000;
+                stroke-width: 2px;
+                stroke-dasharray: 3,3;
+            }
+
+            #radioGroup .wrap {
+                display: inline-block;
+            }
+            #radioGroup label,div {
+                display: block;
+                text-align: center;
+                margin: 0 0.2em;
+            }
+            #radioGroup input[type="checkbox"] {
+                display: block;
+                margin: 0.5em auto;
+            }
+
+        </style>
+
+    </head>
+
+    <body>
+
+        <div>
+            <h5 style= "position:relative;top:2px;"><b>English Top 4 Leagues since the 1949-50 season</b></h5>
+        </div>
+
+        <div width="1200" height="620">
+            <!--            This is my SVG -->
+            <svg width="1080" height="576"></svg>
+        </div>
+
+        <div>
+            <!--            These are the drop down menus to select the start and end year (for the x axis)-->
+            <p style= "position:relative;top:6px;">Min Year: <select id="yearStartSlider" onchange="sliderMinYear()"></select> Max Year: <select id="yearEndSlider" onchange="sliderMaxYear()"></select></p>
+
+            <!--            This is scrolldown menu to allow user's to select which divisions they want to see-->
+            <div style= "position:relative;top:-4px;">
+                Divisions: <select id="Divs" onchange= "didSelectDivisions(this)">
+                <option value="1">Premier League</option>
+                <option value="2" selected >Top 2</option>
+                <option value="3">Top 3</option>
+                <option value="4">Top 4</option></select>
+            </div>
+
+            <script>
+                var currentSliderValues = [yearStart, yearEnd]
+
+
+                function setSliders() {
+                    //This function initilizing the drop down menus for the years
+                    var start = currentSliderValues[0];
+                    var end = currentSliderValues[1];
+                    var options = "";
+                    for(var year = start ; year <=end; year++){
+                        options += "<option>"+ year +"</option>";
+                    }
+                    document.getElementById("yearStartSlider").innerHTML = options;
+
+                    var start2 = end
+                    var end2 = start
+                    var options2 = "";
+                    for(var year2 = start2 ; year2 >= end2 ; year2--){
+                        options2 += "<option>"+ year2 +"</option>";
+                    }
+                    document.getElementById("yearEndSlider").innerHTML = options2;
+                }
+                setSliders()
+            </script>
+        </div>
+
+        <div> 
+            <div id="radioGroup">
+            </div>
+            <!--            These two buttons allow the user to either select all or deselect all teams-->
+            <button onclick="sTeam(true,false,null)">Select All Teams</button>
+            <button onclick = "sTeam(false,true,null)">Deselect All Teams</button>
+        </div>
+
+        <script>
+
+            function sTeam(select,deselect,team) {
+                if (select) {
+                    SetDefaultTeams(true,false)
+                }
+                if (deselect) {
+                    SetDefaultTeams(false,true)
+                }
+            }
+
+            function addClickable(color,image,name){
+                //This menu creates the check boxes for team selection at the bottom
+                var div = document.createElement("div");
+                var innerHTML = '<div style="background-color:'+ color + '"><p><img src="imgs/'+ image + '" style="background-color:white"height="40" width="40"></p></img><h6><font id='+"\'font"+name+'\' color="white"><br></font><\h6></div><input id='+"\'"+name+'\' type="checkbox" checked=checked' +' onchange="didClickTeam(this)"'+'/>'
+                div.innerHTML = innerHTML;
+                div.className="wrap"
+                document.getElementById("radioGroup").appendChild(div);
+            }
+
+            var data = [];
+            //This for loop gets the data from data.js and formats it how i need it to
+            for (index = 0; index < arsenal.length; index++) {
+                var objToAdd = { 'timescale':arsenal[index][0].substring(0,4) };
+                for (i = 0; i < allTeams.length; i++) {
+                    var D = parseInt(allTeams[i][1][index][1].replace("Div", ""))
+                    var P = parseInt(allTeams[i][1][index][2].replace("nd", "").replace("st", "").replace("rd", "").replace("th", ""))
+                    objToAdd[allTeams[i][0]] = ""+D+"-"+P
+                }
+                data.push(objToAdd)
+            }
+
+            var margin = { top: 0, right: 32, bottom: 40, left: 40 },  
+                svg = d3.select('svg'),
+                width = +svg.attr('width') - margin.left - margin.right,
+                height = +svg.attr('height') - margin.top - margin.bottom;
+
+            var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var TeamColorsArray = []
+
+            //this for loop sets the z axis for colors
+            for (index = 0; index < allTeams.length; index++) { 
+                TeamColorsArray.push(allTeams[index][2])
+                addClickable(allTeams[index][2],allTeams[index][3],allTeams[index][0])
+            }
+
+            // Sets the ranges
+            var x = d3.scaleLinear().rangeRound([8, width-8]),
+                y = d3.scaleLinear().rangeRound([height, 0]),
+                z = d3.scaleOrdinal(TeamColorsArray);
+
+            var line = d3.line()
+            .x(function(d) { return x(d.timescale); })
+            .y(function(d) { return y(d.total); });
+
+            // Scales the range of the data
+            z.domain(d3.keys(data[0]).filter(function(key) {
+                return key !== "timescale";
+            }));
+
+            //This function's purpose is to map al the values appropriately to an object array 
+            var trends = z.domain().map(function(name) {
+                var TeamName = name.replace("D:","").replace("P:","")
+                return {
+                    name: TeamName,
+                    values: data.map(function(d) {
+                        var div = d[TeamName].split("-")[0]
+                        var pos = d[TeamName].split("-")[1]
+                        var t = 24-pos;
+                        if (div <= 3) { t = t + 24 }
+                        if (div <= 2) { t = t + 24 }
+                        if (div == 1) { t = t + 20 }
+                        return {
+                            timescale: d.timescale,
+                            total: +t + 1
+                        };
+                    })
+                };
+            });
+        </script>
+
+        <script>
+            //these are the initial values for my graph
+            x.domain([yearStart,yearEnd]);
+            y.domain([72-24,93]);
+
+            // Draw the line
+            var trend = g.selectAll(".trend")
+            .data(trends).enter().append("g").attr("clip-path", "url(#clip)").attr("class", "trend");
+
+            trend.append("path")
+                .attr("class", "line")
+                .attr("d", function(d) { return line(d.values); })
+                .style("stroke", function(d) { return z(d.name); });
+
+            // Draw the empty value for every point
+            var points = g.selectAll('.points')
+            .data(trends)
+            .enter()
+            .append('g')
+            .attr('class', 'points')
+            .append('text');
+
+            // Draw the circle
+            trend
+                .style("fill", "#FFFFFF")
+                .style("stroke", function(d) { return z(d.name); })
+                .selectAll("circle.line")
+                .data(function(d){ 
+                var a = d.values;
+                a[0]["name"] = d.name
+                return a })
+                .enter()
+                .append("circle")
+                .attr("r", 2)
+                .style("stroke-width", 3)
+                .attr("cx", function(d) { return x(d.timescale); })
+                .attr("cy", function(d) { return y(d.total); });
+
+
+            var yearArray = []
+            for(var year = 1949 ; year <= 2017; year++) {
+                yearArray.push(year)
+            }
+
+            var xAxis = d3.axisBottom(x).ticks(100).tickValues(yearArray);
+
+            var yAxis = d3.axisLeft(y).ticks(40).tickSize(-width).tickSizeOuter(0).tickValues([0,24,48,72,92]);
+
+            g.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0, " + height + ")").call(xAxis.tickFormat(function(d, i) { 
+                if (d == "2018") { 
+                    return ""
+                }
+                if (d > currentSliderValues[1]) {
+                    return ""
+                }
+                if (d < currentSliderValues[0]) {
+                    return ""
+                }
+                return d
+            })).selectAll("text").style("text-anchor", "end")
+                .attr("dx", "-.8em")
+                .attr("dy", ".15em")
+                .attr("transform", "rotate(-65)");
+
+            g.append("g")
+                .attr("class", "y axis")
+                .call(yAxis.tickFormat(function(d, i) { 
+                //This function formats the y axis to show the user which division the teams are in
+
+                if (d == 24) { 
+                    return "Div 4"
+                }
+                if (d == 48) { 
+                    return "Div 3"
+                }
+                if (d == 72) { 
+                    return "Div 2"
+                }
+                if (d == 92) { 
+                    return "Div 1"
+                }
+                return "";
+                //return "Div 4:" + (24 - d);
+            }));
+
+            d3.selectAll("g.y.axis g.tick line")
+                .attr("x3", function(d){ return 4; });
+
+            var focus = g.append('g')
+            .attr('class', 'focus')
+            .style('display', 'none');
+
+            focus.append('line')
+                .attr('class', 'x-hover-line hover-line')
+                .attr('y1' , 0)
+                .attr('y2', height);
+
+            svg.append('rect')
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .attr("class", "overlay")
+                .attr("width", width)
+                .attr("height", height)
+                .on("mouseover", mouseover)
+                .on("mouseout", mouseout)
+                .on("mousemove", mousemove);
+
+            svg.append("defs").append("clipPath")
+                .attr("id", "clip")
+                .append("rect")
+                .attr("width", width)
+                .attr("height", height);
+
+            var timeScales = data.map(function(name) { 
+                return x(name.timescale); });
+
+            function mouseover() {
+                focus.style("display", null);
+                d3.selectAll('.points text').style("display", null);
+            }
+
+            function mouseout() {
+                focus.style("display", "none");
+                d3.selectAll('.points text').style("display", "none");
+
+            }
+
+            function mousemove() {
+                //Mouse move shows the dotted line and updates the bottom check box boxes with the division and position of each team
+                var i = d3.bisect(timeScales, d3.mouse(this)[0], 1);
+                var di = data[i-1];
+                focus.attr("transform", "translate(" + x(di.timescale) + ",0)");
+                d3.selectAll('.points text')
+                    .attr('x', function(d) { return x(di.timescale) + 15; })
+                    .attr('y', function(d) { return y(d.values[i-1].total); })
+                    .text(function(d) { 
+                    //This function updates the checkbox boxes with the right position and division anytime the user mouses over a specific year
+                    var div = 1;
+                    var pos = 0; 
+                    if (TeamsToShow[d.name] == false) {
+                        document.getElementById("font"+d.name).innerHTML = "<br>"
+                        return "";
+                    }
+                    var nn = d.values[i-1].total
+                    if (nn <= 24) {
+                        div = 4;
+                        pos = 24 - nn +1
+                    }
+                    else if (nn <= 48) { 
+                        div = 3;
+                        pos =  48 - nn + 1
+                    }
+                    else if (nn <= 72) { 
+                        div = 3;
+                        pos =  72 - nn + 1
+                    } else {
+                        pos = 92 - nn +1
+                    }
+                    //This if statement changes the neccasary boxes to black font to make it easier to read
+                    if (d.name == "Leeds" || d.name == "Tottenham" || d.name == "Man City") {
+                        document.getElementById("font"+d.name).setAttribute("color","#000")
+                    }
+                    document.getElementById("font"+d.name).innerHTML = "Div " + div +"<br>"+ numth(pos)
+                    return pos
+                })
+                    .style('fill', function(d) { return "#000" }).attr("background-color", "white");//z(d.name); });
+            }
+
+        </script>
+
+        <script>
+
+            function numth(ntt) {
+                if (ntt == 1) {
+                    return "1st"
+                } else if ( ntt == 2 ) {
+                    return "2nd"
+                } else if ( ntt == 3 ) {
+                    return "3rd"
+                } else if ( ntt == 21)  {
+                    return "21st"
+                } else if ( ntt == 22)  {
+                    return "22nd"
+                } else if ( ntt == 23) {
+                    return "23rd"
+                }
+                return ntt + "th"  
+                return ntt + "th"  
+            }
+
+            function didSelectDivisions(e) {
+                var numOfDivToShow = (parseInt(e.value))
+                var mini = 72 - ((numOfDivToShow - 1)*24);
+                y.domain([mini,93]);
+                uAll()
+            }
+
+            function sliderMinYear() {
+                var maxV = document.getElementById("yearEndSlider").value
+                var start = document.getElementById("yearStartSlider").value
+                var end = yearEnd
+                var options = "";
+                for(var year = start ; year <=end; year++){
+                    options += "<option>"+ year +"</option>";
+                }
+                document.getElementById("yearEndSlider").innerHTML = options;
+                document.getElementById("yearEndSlider").value = maxV;
+                currentSliderValues = [document.getElementById("yearStartSlider").value,document.getElementById("yearEndSlider").value]
+                setXAxisToSliderValues()
+
+
+            }
+
+            function sliderMaxYear() {
+                var minV = document.getElementById("yearStartSlider").value
+                var start = yearStart
+                var end = document.getElementById("yearEndSlider").value
+                var options = "";
+                for(var year = start ; year <=end; year++){
+                    options += "<option>"+ year +"</option>";
+                }
+                document.getElementById("yearStartSlider").innerHTML = options;
+                document.getElementById("yearStartSlider").value = minV;
+                currentSliderValues = [document.getElementById("yearStartSlider").value,document.getElementById("yearEndSlider").value]
+                setXAxisToSliderValues()
+
+            }
+
+            function setXAxisToSliderValues() {
+                x.domain([currentSliderValues[0],currentSliderValues[1]])
+                uAll()
+            }
+
+            var TeamsToShow = {};
+
+            function didClickTeam(thing) {
+                TeamsToShow[thing.id] = thing.checked
+                uAll()
+            }
+
+            function SetDefaultTeams(selectAll,deAll) {
+                for (i = 0; i < allTeams.length; i++) {
+                    TeamsToShow[allTeams[i][0]] = (i == 0 || i == 2 || i == 4);
+                    if (selectAll) {
+                        TeamsToShow[allTeams[i][0]] = true;
+                    } else if (deAll) {
+                        TeamsToShow[allTeams[i][0]] = false;
+                    }
+
+                    document.getElementById(allTeams[i][0]).checked = TeamsToShow[allTeams[i][0]];
+                }
+                uAll()
+            }
+
+            SetDefaultTeams(false,false)
+
+            //This is my update function, which updates the graph to all neccasary new values when needed.
+            function uAll() {
+
+                var svg = d3.select("body").transition();
+
+                svg.select(".x.axis") // change the x axis
+                    .duration(750)
+                    .call(xAxis).selectAll("text").style("text-anchor", "end").attr("dx", "-.8em").attr("dy", ".15em")
+                    .attr("transform", "rotate(-65)");
+
+                svg.select(".y.axis") // change the y axis
+                    .duration(750)
+                    .call(yAxis);
+
+                svg.selectAll(".line").duration(750).attr("d", function(d) {
+                    if (TeamsToShow[d.name] == false) {
+                        return null;
+                    }
+                    return line(d.values) })
+
+                var skip = false;
+                svg.selectAll("circle")
+                    .attr("cx", function(d) { 
+                    if (d.name != null) {
+                        skip = !TeamsToShow[d.name]
+                    }
+                    if (TeamsToShow[d.name] == false || skip == true) {
+                        skip = true;
+                        return x(0);
+                    }
+                    return x(d.timescale); })
+                    .attr("cy", function(d) { return y(d.total); }).duration(750);
+
+            }
+        </script>
+    </body>
+</html>
