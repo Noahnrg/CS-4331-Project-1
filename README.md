@@ -1,9 +1,10 @@
 # The English Top 4: Visualizing The Top 4 Soccer Divisions in England
 
-[Video example (Screen Capture)](https://www.youtube.com/watch?v=uYz0aMyrqtg)
+### Screen Capture
+[My Screen Capture Recording Hosted on youtube](https://www.youtube.com/watch?v=uYz0aMyrqtg)
 
 ### Try it out:
-**[project.noahgomez.com](http://project.noahgomez.com)**
+**[project1.noahgomez.com](http://project1.noahgomez.com)**
 
 
 ### About
